@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { SHARED_PASSWORD, COOKIE_NAME, IS_PROD } from "../config";
+import { SHARED_PASSWORD, COOKIE_NAME, IS_PROD } from "./config";
 
 export const login = (req: Request, res: Response) => {
   const { username, password } = req.body ?? {};

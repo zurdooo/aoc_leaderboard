@@ -1,0 +1,42 @@
+.user-header {
+  position: fixed;
+  top: 20px;
+  right: 60px;
+  background-color: rgba(30, 30, 30, 0.8);
+  color: #e0e0e0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.user-header .username {
+  font-weight: 500;
+}
+
+.user-header .logout-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.user-header .logout-btn:hover {
+  background-color: rgba(255, 107, 107, 0.15);
+}
