@@ -5,140 +5,21 @@
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.main-content {
+  padding: 2rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.main-content h1 {
+  margin-bottom: 1rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+.loading {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 1rem;
-  z-index: 1000;
-}
-
-.modal {
-  width: 100%;
-  max-width: 420px;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-  text-align: left;
-}
-
-.modal-header {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1rem 0.5rem 1rem;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-.close {
-  background: transparent;
-  border: none;
-  color: #ccc;
-  font-size: 1.25rem;
-  cursor: pointer;
-}
-
-.modal-body {
-  padding: 0 1rem 1rem 1rem;
-}
-
-.error {
-  background: #3b1f1f;
-  color: #ffb3b3;
-  border: 1px solid #552;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 0.9rem;
-}
-
-.field span {
-  font-size: 0.9rem;
-  color: #bbb;
-}
-
-.field input {
-  padding: 0.6rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: #0f0f0f;
-  color: #fff;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.actions .secondary {
-  background: transparent;
-  border: 1px solid #444;
-  color: #ddd;
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.actions .primary {
-  background: #646cff;
-  color: #fff;
-  border: none;
-  padding: 0.55rem 0.95rem;
-  border-radius: 8px;
-  cursor: pointer;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #888;
 }
 
 .btn {
@@ -150,39 +31,7 @@
   cursor: pointer;
 }
 
-/* Error Card styles */
-.error-card {
-  background-color: #3b1f1f;
-  color: #ffb3b3;
-  border: 1px solid #ff4d4d;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.btn:hover {
+  background: #2f2f2f;
 }
 
-.error-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-  border-bottom: 1px solid rgba(255, 77, 77, 0.3);
-  padding-bottom: 0.5rem;
-}
-
-.error-card-body {
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.error-card .close {
-  color: #ffb3b3;
-  padding: 0;
-  line-height: 1;
-  height: auto;
-}
-
-.error-card .close:hover {
-  color: #fff;
-}

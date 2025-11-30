@@ -1,3 +1,5 @@
+import './ErrorCard.css';
+
 type Props = {
   title?: string;
   message: string;
