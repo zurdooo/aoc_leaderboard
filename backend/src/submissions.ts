@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import multer, { FileFilterCallback } from "multer";
+import { runSubmission } from "./dockerRunner";
+import { insertLeaderboardEntry } from "./db";
+import { exec } from "child_process";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -32,8 +35,8 @@ export const submitUpload = upload.fields([
   { name: "input", maxCount: 1 },
 ]);
 
-// File submission handler
-export const handleSubmission = (req: Request, res: Response) => {
+// File submission handler, gets called from the route
+export const handleSubmission = async (req: Request, res: Response) => {
   try {
     const files = req.files as
       | { [fieldname: string]: Express.Multer.File[] }
@@ -74,6 +77,25 @@ export const handleSubmission = (req: Request, res: Response) => {
           }
         : null,
     });
+
+    // Build the leaderboard entry as it stands before execution
+    const initialEntry = {
+      rank: -1, // to be updated after insertion
+      userId: req.body.userId || "anonymous",
+      username: req.body.username || "anonymous",
+      day: day,
+      part1Completed: part1,
+      part2Completed: part2,
+      language: solutionFile.mimetype,
+      executionTimeMs: -1,
+      memoryUsageKb: -1,
+      linesOfRelevantCode: -1,
+      submittedAt: new Date(),
+    };
+
+    // Send submission for processing
+    const execResult = await runSubmission(solutionFile.buffer, initialEntry);
+    await insertLeaderboardEntry(execResult);
 
     res.json({
       success: true,

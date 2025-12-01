@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { DB_CONFIG } from '../config';
+import { LeaderboardEntry } from '../types/leaderboard';
 
 const pool = new Pool(DB_CONFIG);
 
@@ -20,3 +21,7 @@ export const getClient = async () => {
   const client = await pool.connect();
   return client;
 };
+
+// TODO: Define additional functions to query the database as needed
+export const insertLeaderboardEntry = async (entry: LeaderboardEntry) => {
+}

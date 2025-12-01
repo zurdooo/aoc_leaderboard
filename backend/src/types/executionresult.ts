@@ -1,0 +1,3 @@
+/*
+Type definition for post docker execution result
+*/
