@@ -1,0 +1,68 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-username {
+  color: #bbb;
+  font-size: 0.9rem;
+}
+
+.header-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-btn.submit-btn {
+  background: #646cff;
+  color: #fff;
+  border: none;
+}
+
+.header-btn.submit-btn:hover {
+  background: #5558dd;
+}
+
+.header-btn.logout-btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ddd;
+}
+
+.header-btn.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}

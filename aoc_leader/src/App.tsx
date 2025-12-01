@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import './App.css';
-import UserHeader from './components/UserHeader';
+import Header from './components/Header';
 import LoginModal from './components/LoginModal';
+import FileSubmission from './components/FileSubmission';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isSubmitOpen, setIsSubmitOpen] = useState(false);
   const { isAuthenticated, username, isLoading, login, logout } = useAuth();
 
   const handleLogin = async (credentials: { username: string; password: string }) => {
@@ -32,8 +34,12 @@ function App() {
 
       {isAuthenticated && (
         <>
-          <UserHeader username={username} onLogout={logout} />
-          <div className="main-content">
+          <Header 
+            username={username} 
+            onLogout={logout} 
+            onSubmitClick={() => setIsSubmitOpen(true)}
+          />
+          <div className="main-content" style={{ paddingTop: '80px' }}>
             <h1>AOC Leaderboard</h1>
             <p>Welcome, {username}!</p>
             {/* TODO: Add leaderboard content here */}
@@ -46,6 +52,10 @@ function App() {
           onLogin={handleLogin}
           onClose={() => setIsLoginOpen(false)}
         />
+      )}
+
+      {isSubmitOpen && (
+        <FileSubmission onClose={() => setIsSubmitOpen(false)} />
       )}
     </>
   );

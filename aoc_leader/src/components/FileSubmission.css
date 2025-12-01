@@ -1,0 +1,310 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1001;
+}
+
+.file-submission {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.file-submission-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.file-submission h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.file-naming-hint {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.6rem 0.8rem;
+  background: #0f0f0f;
+  border: 1px solid rgba(253, 253, 253, 0.2);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.file-naming-hint code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  color: #bbb;
+  font-family: monospace;
+}
+
+/* Day and Part Selection */
+.selection-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.selection-row .field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.selection-row .field span {
+  font-size: 0.9rem;
+  color: #bbb;
+}
+
+.selection-row select {
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.selection-row select:focus {
+  outline: none;
+  border-color: #0f0f0f;
+}
+
+.part-checkboxes {
+  display: flex;
+  gap: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.checkbox-label:hover {
+  border-color: #f9f9ff;
+  background: #0f0f0f;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #646cff;
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+/* Section Labels */
+.section-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #bbb;
+  margin-bottom: 0.5rem;
+}
+
+.drop-zone {
+  border: 2px dashed #444;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #0f0f0f;
+  margin-bottom: 1rem;
+}
+
+.drop-zone.input-zone {
+  padding: 1rem;
+}
+
+.drop-zone:hover {
+  border-color: #f2f2fc;
+  background: #0f0f0f;
+}
+
+.drop-zone.has-file {
+  border-color: #4caf50;
+  border-style: solid;
+  background: #1a2a1a;
+}
+
+.drop-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drop-prompt p {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.95rem;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.file-name {
+  font-size: 1rem;
+  color: #4caf50;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.clear-input-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.clear-input-btn:hover {
+  color: #ff6b6b;
+}
+
+.file-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0;
+}
+
+.file-actions .btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.file-actions .btn.secondary {
+  background: transparent;
+  border: 1px solid #444;
+  color: #ddd;
+}
+
+.file-actions .btn.secondary:hover {
+  background: #2a2a2a;
+}
+
+.file-actions .btn.primary {
+  background: #646cff;
+  color: #fff;
+  border: none;
+}
+
+.file-actions .btn.primary:hover {
+  background: #5558dd;
+}
+
+/* Submitting state */
+.drop-zone.submitting {
+  cursor: default;
+  border-color: #646cff;
+  background: #1a1a2e;
+}
+
+.submitting-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.submitting-indicator p {
+  margin: 0;
+  color: #bbb;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #333;
+  border-top-color: #646cff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Feedback states */
+.submission-feedback {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.feedback-message {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+}
+
+.feedback-filename {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0 0 1.5rem 0;
+}
+
+.submission-feedback.success .feedback-message {
+  color: #4caf50;
+}
+
+.submission-feedback.error .feedback-message {
+  color: #ff6b6b;
+}
