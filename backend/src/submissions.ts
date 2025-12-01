@@ -94,7 +94,11 @@ export const handleSubmission = async (req: Request, res: Response) => {
     };
 
     // Send submission for processing
-    const execResult = await runSubmission(solutionFile.buffer, initialEntry);
+    const execResult = await runSubmission(
+      solutionFile.buffer,
+      initialEntry,
+      inputFile?.buffer
+    );
     await insertLeaderboardEntry(execResult);
 
     res.json({
