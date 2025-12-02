@@ -13,18 +13,29 @@ import { Readable, PassThrough } from "stream";
 const docker = new Docker();
 
 // Container config by language
-const LANGUAGE_CONFIG: Record<string, { image: string; cmd: (filename: string) => string[] }> = {
+const LANGUAGE_CONFIG: Record<
+  string,
+  { image: string; cmd: (filename: string) => string[] }
+> = {
   python: {
     image: "python:3.11-slim",
     cmd: (filename) => ["python", filename],
   },
   c: {
     image: "gcc:latest",
-    cmd: (filename) => ["sh", "-c", `gcc -o /tmp/solution ${filename} && /tmp/solution`],
+    cmd: (filename) => [
+      "sh",
+      "-c",
+      `gcc -o /tmp/solution ${filename} && /tmp/solution`,
+    ],
   },
   cpp: {
     image: "gcc:latest",
-    cmd: (filename) => ["sh", "-c", `g++ -o /tmp/solution ${filename} && /tmp/solution`],
+    cmd: (filename) => [
+      "sh",
+      "-c",
+      `g++ -o /tmp/solution ${filename} && /tmp/solution`,
+    ],
   },
 };
 
@@ -44,27 +55,15 @@ interface ExecutionResult {
 /**
  * Detect language from file extension or mimetype
  */
-function detectLanguage(filename: string, mimetype: string): string {
+function detectLanguage(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
-  
-  if (ext === "py" || mimetype.includes("python")) return "python";
+
+  if (ext === "py") return "python";
   if (ext === "c") return "c";
-  if (ext === "cpp" || ext === "cc" || ext === "cxx") return "cpp";
-  
+  if (ext === "cpp") return "cpp";
+
   // Default to python if unknown
   return "python";
-}
-
-/**
- * Collect stream output into a string
- */
-function streamToString(stream: Readable): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
-    stream.on("error", reject);
-  });
 }
 
 /**
@@ -73,7 +72,7 @@ function streamToString(stream: Readable): Promise<string> {
 async function executeInContainer(
   code: Buffer,
   language: string,
-  inputBuffer?: Buffer
+  inputBuffer: Buffer
 ): Promise<ExecutionResult> {
   const config = LANGUAGE_CONFIG[language];
   if (!config) {
@@ -112,41 +111,40 @@ async function executeInContainer(
     },
     AttachStdout: true,
     AttachStderr: true,
-    AttachStdin: !!inputBuffer,
-    OpenStdin: !!inputBuffer,
+    AttachStdin: true,
+    OpenStdin: true,
     StdinOnce: true,
     Tty: false,
   });
 
   try {
+    // TODO: Change this logic or understand it better
     // Copy solution code to container
     const tarStream = createTarStream(filename.replace("/tmp/", ""), code);
     await container.putArchive(tarStream, { path: "/tmp" });
 
-    // If there's input, copy it too
-    if (inputBuffer) {
-      const inputTar = createTarStream("input.txt", inputBuffer);
-      await container.putArchive(inputTar, { path: "/tmp" });
-    }
+    // Copy input file to container
+    const inputTar = createTarStream("input.txt", inputBuffer);
+    await container.putArchive(inputTar, { path: "/tmp" });
 
     // Attach to container streams
     const attachOptions = {
       stream: true,
       stdout: true,
       stderr: true,
-      stdin: !!inputBuffer,
+      stdin: true,
     };
-    
+
     const stream = await container.attach(attachOptions);
-    
+
     // Start timing
     const startTime = Date.now();
-    
+
     // Start container
     await container.start();
 
-    // If we have input, write it to stdin
-    if (inputBuffer && stream.writable) {
+    // Write input to stdin
+    if (stream.writable) {
       stream.write(inputBuffer);
       stream.end();
     }
@@ -154,7 +152,7 @@ async function executeInContainer(
     // Collect output with demuxing (Docker multiplexes stdout/stderr)
     const stdoutChunks: Buffer[] = [];
     const stderrChunks: Buffer[] = [];
-    
+
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(async () => {
         try {
@@ -168,7 +166,7 @@ async function executeInContainer(
       // Demux the stream - use PassThrough streams for proper typing
       const stdoutStream = new PassThrough();
       const stderrStream = new PassThrough();
-      
+
       stdoutStream.on("data", (chunk: Buffer) => stdoutChunks.push(chunk));
       stderrStream.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
 
@@ -219,56 +217,60 @@ async function executeInContainer(
 /**
  * Create a simple tar archive with a single file
  * Docker requires tar format for putArchive
+ * ???
  */
 function createTarStream(filename: string, content: Buffer): Readable {
   // Simple tar format implementation
   const header = Buffer.alloc(512);
-  
+
   // File name (100 bytes)
   header.write(filename, 0, 100, "utf-8");
-  
+
   // File mode (8 bytes) - 0644
   header.write("0000644\0", 100, 8, "utf-8");
-  
+
   // UID (8 bytes)
   header.write("0000000\0", 108, 8, "utf-8");
-  
+
   // GID (8 bytes)
   header.write("0000000\0", 116, 8, "utf-8");
-  
+
   // File size in octal (12 bytes)
   const sizeOctal = content.length.toString(8).padStart(11, "0") + "\0";
   header.write(sizeOctal, 124, 12, "utf-8");
-  
+
   // Modification time (12 bytes)
-  const mtime = Math.floor(Date.now() / 1000).toString(8).padStart(11, "0") + "\0";
+  const mtime =
+    Math.floor(Date.now() / 1000)
+      .toString(8)
+      .padStart(11, "0") + "\0";
   header.write(mtime, 136, 12, "utf-8");
-  
+
   // Checksum placeholder (8 spaces)
   header.write("        ", 148, 8, "utf-8");
-  
+
   // Type flag - '0' for regular file
   header.write("0", 156, 1, "utf-8");
-  
+
   // Calculate checksum
   let checksum = 0;
   for (let i = 0; i < 512; i++) {
     checksum += header[i];
   }
   header.write(checksum.toString(8).padStart(6, "0") + "\0 ", 148, 8, "utf-8");
-  
+
   // Pad content to 512-byte boundary
   const padding = 512 - (content.length % 512);
   const paddedContent = Buffer.concat([
     content,
     padding < 512 ? Buffer.alloc(padding) : Buffer.alloc(0),
   ]);
-  
+
   // End of archive (two 512-byte zero blocks)
   const endBlock = Buffer.alloc(1024);
-  
+
   const tarBuffer = Buffer.concat([header, paddedContent, endBlock]);
-  
+
   return Readable.from(tarBuffer);
 }
 
@@ -282,7 +284,7 @@ function countLinesOfCode(code: Buffer, language: string): number {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     // Skip empty lines
     if (!trimmed) continue;
 
@@ -309,7 +311,10 @@ function countLinesOfCode(code: Buffer, language: string): number {
       // Simple docstring detection (not perfect but good enough)
       if (trimmed.startsWith('"""') || trimmed.startsWith("'''")) {
         // Single line docstring
-        if (trimmed.length > 3 && (trimmed.endsWith('"""') || trimmed.endsWith("'''"))) {
+        if (
+          trimmed.length > 3 &&
+          (trimmed.endsWith('"""') || trimmed.endsWith("'''"))
+        ) {
           continue;
         }
         inBlockComment = !inBlockComment;
@@ -330,14 +335,18 @@ function countLinesOfCode(code: Buffer, language: string): number {
 async function runSubmission(
   solutionBuffer: Buffer,
   entry: LeaderboardEntry,
-  inputBuffer?: Buffer
+  inputBuffer: Buffer
 ): Promise<LeaderboardEntry> {
   // Detect language from the entry or filename
-  const language = detectLanguage(entry.language, entry.language);
-  
+  const language = detectLanguage(entry.language);
+
   try {
-    const result = await executeInContainer(solutionBuffer, language, inputBuffer);
-    
+    const result = await executeInContainer(
+      solutionBuffer,
+      language,
+      inputBuffer
+    );
+
     // Log execution result
     console.log("Execution result:", {
       exitCode: result.exitCode,
@@ -361,7 +370,7 @@ async function runSubmission(
     };
   } catch (error) {
     console.error("Docker execution error:", error);
-    
+
     // Return entry with error indicators
     return {
       ...entry,

@@ -49,6 +49,11 @@ export const handleSubmission = async (req: Request, res: Response) => {
       return;
     }
 
+    if (!inputFile) {
+      res.status(400).json({ error: "No input file uploaded" });
+      return;
+    }
+
     const { originalname, size, mimetype } = solutionFile;
     const day = req.body.day;
     const part1 = req.body.part1 === "true";
@@ -97,7 +102,7 @@ export const handleSubmission = async (req: Request, res: Response) => {
     const execResult = await runSubmission(
       solutionFile.buffer,
       initialEntry,
-      inputFile?.buffer
+      inputFile.buffer
     );
     await insertLeaderboardEntry(execResult);
 
