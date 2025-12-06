@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { DB_CONFIG } from '../config';
-import { LeaderboardEntry } from '../types/leaderboard';
+import type { LeaderboardEntry } from '../types/leaderboardTypes';
 
 const pool = new Pool(DB_CONFIG);
 

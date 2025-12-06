@@ -6,7 +6,7 @@ get the results (stdout, stderr, exit code, time, memory),
 then use interpret those stats to build and return a LeaderboardEntry.
 */
 
-import { LeaderboardEntry } from "./types/leaderboard";
+import type { LeaderboardEntry } from "./types/leaderboardTypes";
 import Docker from "dockerode";
 import { Readable, PassThrough } from "stream";
 

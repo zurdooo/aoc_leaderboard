@@ -29,9 +29,28 @@
   padding: 0.5rem 0.8rem;
   border-radius: 8px;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .btn:hover {
   background: #2f2f2f;
+}
+
+.btn.primary {
+  border-color: #6c5ce7;
+  background: linear-gradient(135deg, #6c5ce7, #a363d9);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(135deg, #7f6ff2, #b377eb);
+}
+
+.btn.secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 

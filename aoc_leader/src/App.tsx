@@ -3,6 +3,7 @@ import './App.css';
 import Header from './components/Header';
 import LoginModal from './components/LoginModal';
 import FileSubmission from './components/FileSubmission';
+import Leaderboard from './components/Leaderboard';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -42,7 +43,7 @@ function App() {
           <div className="main-content" style={{ paddingTop: '80px' }}>
             <h1>AOC Leaderboard</h1>
             <p>Welcome, {username}!</p>
-            {/* TODO: Add leaderboard content here */}
+            <Leaderboard />
           </div>
         </>
       )}
