@@ -12,6 +12,7 @@ interface LeaderboardFiltersProps {
   filters: LeaderboardFilterFormState;
   onChange: (next: LeaderboardFilterFormState) => void;
   onReset: () => void;
+  onRefresh: () => void;
 }
 
 const numberInputProps = {
@@ -23,6 +24,7 @@ export default function LeaderboardFilters({
   filters,
   onChange,
   onReset,
+  onRefresh,
 }: LeaderboardFiltersProps) {
   const update = (key: keyof LeaderboardFilterFormState, value: string) => {
     onChange({
@@ -82,6 +84,9 @@ export default function LeaderboardFilters({
           />
         </label>
         <div className="filter-actions">
+          <button type="button" className="btn secondary" onClick={onRefresh}>
+            Refresh
+          </button>
           <button type="submit" className="btn secondary">
             Clear filters
           </button>
