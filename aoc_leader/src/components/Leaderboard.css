@@ -57,7 +57,7 @@
   }
 
   .filter-grid.inline-action {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -98,11 +98,17 @@
 }
 
 .filter-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  grid-column: span 2;
+  justify-content: end;
   gap: 0.5rem;
   align-items: center;
   padding-right: 1.0rem;
+}
+
+.filter-actions .btn {
+  width: 100%;
 }
 
 .leaderboard-table-container {

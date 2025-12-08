@@ -2,10 +2,11 @@ const API_BASE = "http://localhost:3001";
 
 export interface SubmissionData {
   file: File;
+  year: number;
   day: number;
   part1: boolean;
   part2: boolean;
-  inputFile?: File | null;
+  inputFile: File;
 }
 
 export interface SubmissionResponse {
@@ -23,13 +24,12 @@ export async function submitSolution(
 ): Promise<SubmissionResponse> {
   const formData = new FormData();
   formData.append("file", data.file);
+  formData.append("year", data.year.toString());
   formData.append("day", data.day.toString());
   formData.append("part1", data.part1.toString());
   formData.append("part2", data.part2.toString());
 
-  if (data.inputFile) {
-    formData.append("input", data.inputFile);
-  }
+  formData.append("input", data.inputFile);
 
   const response = await fetch(`${API_BASE}/api/submit`, {
     method: "POST",

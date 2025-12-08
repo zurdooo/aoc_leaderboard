@@ -55,9 +55,20 @@ export const handleSubmission = async (req: Request, res: Response) => {
     }
 
     const { originalname, size, mimetype } = solutionFile;
-    const day = req.body.day;
+    const day = Number(req.body.day);
+    const year = Number(req.body.year);
     const part1 = req.body.part1 === "true";
     const part2 = req.body.part2 === "true";
+
+    if (!Number.isFinite(day) || day < 1 || day > 25) {
+      res.status(400).json({ error: "Invalid day; must be between 1 and 25" });
+      return;
+    }
+
+    if (!Number.isFinite(year) || year < 2015 || year > 2100) {
+      res.status(400).json({ error: "Invalid year" });
+      return;
+    }
 
     // Build parts string for message
     const parts = [];
@@ -88,10 +99,11 @@ export const handleSubmission = async (req: Request, res: Response) => {
       rank: -1, // to be updated after insertion
       userId: req.body.userId || "anonymous",
       username: req.body.username || "anonymous",
+      year,
       day: day,
       part1Completed: part1,
       part2Completed: part2,
-      language: solutionFile.mimetype,
+      language: detectLanguageFromFilename(originalname),
       executionTimeMs: -1,
       memoryUsageKb: -1,
       linesOfRelevantCode: -1,
@@ -112,6 +124,14 @@ export const handleSubmission = async (req: Request, res: Response) => {
       file: {
         name: originalname,
         size: size,
+        type: mimetype,
+      },
+      stats: {
+        executionTimeMs: execResult.executionTimeMs,
+        memoryUsageKb: execResult.memoryUsageKb,
+        linesOfRelevantCode: execResult.linesOfRelevantCode,
+        language: execResult.language,
+        submittedAt: execResult.submittedAt,
       },
     });
   } catch (err) {
@@ -119,3 +139,11 @@ export const handleSubmission = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to process submission" });
   }
 };
+
+function detectLanguageFromFilename(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".py")) return "python";
+  if (lower.endsWith(".cpp") || lower.endsWith(".cc") || lower.endsWith(".cxx")) return "cpp";
+  if (lower.endsWith(".c")) return "c";
+  return "python";
+}

@@ -19,14 +19,14 @@ const LANGUAGE_CONFIG: Record<
 > = {
   python: {
     image: "python:3.11-slim",
-    cmd: (filename) => ["python", filename],
+    cmd: (filename) => ["sh", "-c", `python ${filename} < /tmp/input.txt`],
   },
   c: {
     image: "gcc:latest",
     cmd: (filename) => [
       "sh",
       "-c",
-      `gcc -o /tmp/solution ${filename} && /tmp/solution`,
+      `gcc -o /tmp/solution ${filename} && /tmp/solution < /tmp/input.txt`,
     ],
   },
   cpp: {
@@ -34,7 +34,7 @@ const LANGUAGE_CONFIG: Record<
     cmd: (filename) => [
       "sh",
       "-c",
-      `g++ -o /tmp/solution ${filename} && /tmp/solution`,
+      `g++ -std=c++23 -O2 -pipe -static -s -o /tmp/solution ${filename} && /tmp/solution < /tmp/input.txt`,
     ],
   },
 };
@@ -55,12 +55,15 @@ interface ExecutionResult {
 /**
  * Detect language from file extension or mimetype
  */
-function detectLanguage(filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase();
+function detectLanguage(filenameOrMime: string): string {
+  const lower = filenameOrMime.toLowerCase();
+  const ext = lower.split(".").pop();
 
-  if (ext === "py") return "python";
-  if (ext === "c") return "c";
-  if (ext === "cpp") return "cpp";
+  if (ext === "py" || lower.includes("python")) return "python";
+  if (ext === "c" || lower.includes("/c")) return "c";
+  if (ext === "cpp" || lower.includes("c++") || lower.includes("cpp")) {
+    return "cpp";
+  }
 
   // Default to python if unknown
   return "python";
@@ -111,15 +114,14 @@ async function executeInContainer(
     },
     AttachStdout: true,
     AttachStderr: true,
-    AttachStdin: true,
-    OpenStdin: true,
-    StdinOnce: true,
+    AttachStdin: false,
+    OpenStdin: false,
+    StdinOnce: false,
     Tty: false,
   });
 
   try {
-    // TODO: Change this logic or understand it better
-    // Copy solution code to container
+    // Copy solution code to container using a minimal tar archive (Docker putArchive expects tar)
     const tarStream = createTarStream(filename.replace("/tmp/", ""), code);
     await container.putArchive(tarStream, { path: "/tmp" });
 
@@ -127,12 +129,11 @@ async function executeInContainer(
     const inputTar = createTarStream("input.txt", inputBuffer);
     await container.putArchive(inputTar, { path: "/tmp" });
 
-    // Attach to container streams
+    // Attach to container streams (stdout/stderr only)
     const attachOptions = {
       stream: true,
       stdout: true,
       stderr: true,
-      stdin: true,
     };
 
     const stream = await container.attach(attachOptions);
@@ -142,12 +143,6 @@ async function executeInContainer(
 
     // Start container
     await container.start();
-
-    // Write input to stdin
-    if (stream.writable) {
-      stream.write(inputBuffer);
-      stream.end();
-    }
 
     // Collect output with demuxing (Docker multiplexes stdout/stderr)
     const stdoutChunks: Buffer[] = [];

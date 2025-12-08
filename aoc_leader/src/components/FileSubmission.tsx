@@ -11,6 +11,7 @@ type SubmissionStatus = "idle" | "submitting" | "success" | "error";
 export default function FileSubmission({ onClose }: FileSubmissionProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [inputFile, setInputFile] = useState<File | null>(null);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
   const [day, setDay] = useState<number>(1);
   const [part1, setPart1] = useState<boolean>(false);
   const [part2, setPart2] = useState<boolean>(false);
@@ -58,7 +59,17 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      setMessage("Solution file is required.");
+      setStatus("error");
+      return;
+    }
+
+    if (!inputFile) {
+      setMessage("Input file is required.");
+      setStatus("error");
+      return;
+    }
 
     setStatus("submitting");
     setMessage("");
@@ -66,6 +77,7 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
     try {
       const result = await submitSolution({
         file: selectedFile,
+        year,
         day,
         part1,
         part2,
@@ -138,8 +150,22 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
           </div>
         ) : (
           <>
-            {/* Day and Part Selection */}
+            {/* Year, Day and Part Selection */}
             <div className="selection-row">
+              <label className="field">
+                <span>Year</span>
+                <select
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  disabled={status === "submitting"}
+                >
+                  {Array.from({ length: 11 }, (_, i) => 2015 + i).map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="field">
                 <span>Day</span>
                 <select
@@ -215,7 +241,7 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
             </div>
 
             {/* Input File Upload */}
-            <label className="section-label">Input File (optional)</label>
+            <label className="section-label">Input File</label>
             <div
               className={`drop-zone input-zone ${inputFile ? "has-file" : ""}`}
               onClick={
@@ -265,7 +291,11 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
                 <button className="btn secondary" onClick={handleClear}>
                   Clear
                 </button>
-                <button className="btn primary" onClick={handleSubmit}>
+                <button
+                  className="btn primary"
+                  onClick={handleSubmit}
+                  disabled={!inputFile}
+                >
                   Submit
                 </button>
               </div>
