@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import "./FileSubmission.css";
+import "./styles/FileSubmission.css";
 import { submitSolution } from "../api/submissions";
 
 interface FileSubmissionProps {

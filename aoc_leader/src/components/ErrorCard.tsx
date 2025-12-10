@@ -1,4 +1,4 @@
-import './ErrorCard.css';
+import './styles/ErrorCard.css';
 
 type Props = {
   title?: string;

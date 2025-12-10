@@ -1,4 +1,4 @@
-import './Header.css';
+import './styles/Header.css';
 
 interface HeaderProps {
   username: string;

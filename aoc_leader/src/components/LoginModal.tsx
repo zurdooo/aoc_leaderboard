@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ErrorCard from './ErrorCard';
-import './LoginModal.css';
+import './styles/LoginModal.css';
 
 interface LoginModalProps {
   onLogin: (credentials: { username: string; password: string }) => Promise<{ success: boolean; error?: string }>;

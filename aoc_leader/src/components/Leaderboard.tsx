@@ -4,7 +4,7 @@ import type { LeaderboardFilters as QueryFilters } from "../api/leaderboard";
 import LeaderboardFilters from "./LeaderboardFilters";
 import type { LeaderboardFilterFormState } from "./LeaderboardFilters";
 import LeaderboardTable from "./LeaderboardTable";
-import "./Leaderboard.css";
+import "./styles/Leaderboard.css";
 
 const DEFAULT_FORM: LeaderboardFilterFormState = {
   year: "",

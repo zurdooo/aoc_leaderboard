@@ -1,5 +1,5 @@
 import React from 'react';
-import './UserHeader.css';
+import './styles/UserHeader.css';
 
 interface UserHeaderProps {
   username: string;
