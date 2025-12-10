@@ -12,6 +12,52 @@ import { Readable, PassThrough } from "stream";
 
 const docker = new Docker();
 
+const RUNNER_C_CODE = `#include <sys/resource.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+    if (argc < 2) return 1;
+    pid_t pid = fork();
+    if (pid == 0) {
+        execvp(argv[1], &argv[1]);
+        perror("execvp");
+        exit(1);
+    }
+    int status;
+    struct rusage usage;
+    wait4(pid, &status, 0, &usage);
+    fprintf(stderr, "###_MEM_PEAK_KB_%ld_###", usage.ru_maxrss);
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    return 1;
+}
+`;
+
+const RUNNER_PY_CODE = `import sys
+import subprocess
+import resource
+
+cmd = sys.argv[1:]
+proc = subprocess.Popen(cmd, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
+proc.wait()
+
+# Use RUSAGE_CHILDREN to get memory of the child process
+usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+mem_kb = usage.ru_maxrss
+
+# If RUSAGE_CHILDREN didn't give us data, fall back to RUSAGE_SELF for the Python process
+if mem_kb <= 0:
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    mem_kb = usage.ru_maxrss
+
+sys.stderr.write(f"###_MEM_PEAK_KB_{mem_kb}_###")
+sys.exit(proc.returncode)
+`;
+
 // Container config by language
 const LANGUAGE_CONFIG: Record<
   string,
@@ -19,14 +65,14 @@ const LANGUAGE_CONFIG: Record<
 > = {
   python: {
     image: "python:3.11-slim",
-    cmd: (filename) => ["sh", "-c", "python " + filename + " < /tmp/input.txt"],
+    cmd: (filename) => ["sh", "-c", "python /tmp/runner.py python " + filename + " < /tmp/input.txt"],
   },
   c: {
     image: "gcc:latest",
     cmd: (filename) => [
       "sh",
       "-c",
-      "gcc -O0 -g -o /tmp/solution " + filename + " && /tmp/solution < /tmp/input.txt",
+      "gcc -x c /tmp/runner.c -o /tmp/runner && gcc -O0 -g -o /tmp/solution " + filename + " && /tmp/runner /tmp/solution < /tmp/input.txt",
     ],
   },
   cpp: {
@@ -34,7 +80,7 @@ const LANGUAGE_CONFIG: Record<
     cmd: (filename) => [
       "sh",
       "-c",
-      "g++ -std=c++23 -O0 -g -o /tmp/solution " + filename + " && /tmp/solution < /tmp/input.txt",
+      "gcc -x c /tmp/runner.c -o /tmp/runner && g++ -std=c++23 -O0 -g -o /tmp/solution " + filename + " && /tmp/runner /tmp/solution < /tmp/input.txt",
     ],
   },
 };
@@ -130,6 +176,15 @@ async function executeInContainer(
   const tarStream = createTarStream(filename.replace("/tmp/", ""), code);
   await container.putArchive(tarStream, { path: "/tmp" });
 
+  // Copy runner files
+  if (language === "python") {
+    const runnerTar = createTarStream("runner.py", Buffer.from(RUNNER_PY_CODE));
+    await container.putArchive(runnerTar, { path: "/tmp" });
+  } else {
+    const runnerTar = createTarStream("runner.c", Buffer.from(RUNNER_C_CODE));
+    await container.putArchive(runnerTar, { path: "/tmp" });
+  }
+
   // Copy input file to container
   const inputTar = createTarStream("input.txt", inputBuffer);
   await container.putArchive(inputTar, { path: "/tmp" });
@@ -201,11 +256,19 @@ async function executeInContainer(
       // ignore inspect errors
     }
 
-    const memoryUsageKb = await readPeakMemoryUsage(container);
+    const stderrFull = Buffer.concat(stderrChunks).toString("utf-8");
+    let stderrClean = stderrFull;
+    let memoryUsageKb = 0;
+
+    const memMatch = stderrFull.match(/###_MEM_PEAK_KB_(\d+)_###/);
+    if (memMatch) {
+      memoryUsageKb = parseInt(memMatch[1], 10);
+      stderrClean = stderrFull.replace(memMatch[0], "");
+    }
 
     return {
       stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
-      stderr: Buffer.concat(stderrChunks).toString("utf-8"),
+      stderr: stderrClean,
       exitCode: waitResult.StatusCode,
       executionTimeMs: endTime - runStart,
       setupTimeMs: setupEnd - setupStart,
@@ -336,108 +399,7 @@ function countLinesOfCode(code: Buffer, language: string): number {
  * Runs the submission code inside a Docker container, captures stats and creates a LeaderboardEntry
  */
 
-async function readPeakMemoryUsage(container: Docker.Container): Promise<number> {
-  const cgroupFiles = [
-    "/sys/fs/cgroup/memory.peak",
-    "/sys/fs/cgroup/memory.max_usage_in_bytes",
-    "/sys/fs/cgroup/memory.current",
-    "/sys/fs/cgroup/memory/memory.peak",
-    "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
-    "/sys/fs/cgroup/memory/memory.usage_in_bytes",
-  ];
 
-  for (const file of cgroupFiles) {
-    const bytes = await readNumberFromCgroup(container, file);
-    if (bytes > 0) {
-      return Math.max(1, Math.round(bytes / 1024));
-    }
-  }
-
-  const statBytes = await readFromMemoryStat(container);
-  if (statBytes > 0) {
-    return Math.max(1, Math.round(statBytes / 1024));
-  }
-
-  return 0;
-}
-
-async function readNumberFromCgroup(
-  container: Docker.Container,
-  path: string
-): Promise<number> {
-  const content = await readFileFromContainer(container, path);
-  if (!content) return 0;
-  const value = parseInt(content, 10);
-  return Number.isFinite(value) ? value : 0;
-}
-
-async function readFromMemoryStat(container: Docker.Container): Promise<number> {
-  const content = await readFileFromContainer(
-    container,
-    "/sys/fs/cgroup/memory.stat"
-  );
-  if (!content) return 0;
-  let max = 0;
-  for (const line of content.split(/\r?\n/)) {
-    const [key, raw] = line.trim().split(/\s+/);
-    if (!raw) continue;
-    if (key === "peak" || key === "rss" || key === "anon" || key === "max") {
-      const value = parseInt(raw, 10);
-      if (Number.isFinite(value) && value > max) {
-        max = value;
-      }
-    }
-    if (key === "hierarchical_memory_limit") {
-      continue;
-    }
-    if (key.startsWith("total_")) {
-      const value = parseInt(raw, 10);
-      if (Number.isFinite(value) && value > max) {
-        max = value;
-      }
-    }
-  }
-  return max;
-}
-
-async function readFileFromContainer(
-  container: Docker.Container,
-  path: string
-): Promise<string | null> {
-  try {
-    const execInstance = await container.exec({
-      Cmd: ["cat", path],
-      AttachStdout: true,
-      AttachStderr: true,
-    });
-
-    return await new Promise<string | null>((resolve) => {
-      execInstance.start({ hijack: true, stdin: false }, (err?: Error, stream?: NodeJS.ReadableStream) => {
-        if (err || !stream) {
-          resolve(null);
-          return;
-        }
-
-        let output = "";
-        const stdoutStream = new PassThrough();
-        const stderrStream = new PassThrough();
-
-        stdoutStream.on("data", (chunk: Buffer) => {
-          output += chunk.toString("utf-8");
-        });
-
-        docker.modem.demuxStream(stream, stdoutStream, stderrStream);
-
-        stream.on("end", () => {
-          resolve(output.trim());
-        });
-        stream.on("error", () => resolve(null));
-      });
-    });
-  } catch {
-    return null;
-  }
-}
 async function runSubmission(
   solutionBuffer: Buffer,
   entry: LeaderboardEntry,

@@ -89,5 +89,46 @@ async function runDockerDebugSample() {
   }
 }
 
+// Always-on debug hook to validate Docker execution with a sample Python file
+async function runDockerDebugSamplePy() {
+  const sampleCodePath = path.join(__dirname, "..", "sample", "test.py");
+  const sampleInputPath = path.join(__dirname, "..", "sample", "input.txt");
+
+  try {
+    const [codeBuf, inputBuf] = await Promise.all([
+      fs.readFile(sampleCodePath),
+      fs.readFile(sampleInputPath).catch(() => Buffer.from("")),
+    ]);
+
+    const sampleEntry: LeaderboardEntry = {
+      rank: -1,
+      userId: "debug-user",
+      username: "docker-debug",
+      year: new Date().getFullYear(),
+      day: 0,
+      part1Completed: true,
+      part2Completed: false,
+      language: "python",
+      executionTimeMs: -1,
+      memoryUsageKb: -1,
+      linesOfRelevantCode: -1,
+      submittedAt: new Date(),
+    };
+
+    console.log("[docker-debug] Running sample Python submission...");
+    const result = await runSubmission(codeBuf, sampleEntry, inputBuf);
+    console.log("[docker-debug] Completed sample Python run:", {
+      exitCode: result.executionTimeMs === -1 ? "unknown" : 0,
+      language: result.language,
+      executionTimeMs: result.executionTimeMs,
+      memoryUsageKb: result.memoryUsageKb,
+      linesOfRelevantCode: result.linesOfRelevantCode,
+    });
+  } catch (err) {
+    console.error("[docker-debug] Failed to run sample Python:", err);
+  }
+}
+
 // Fire and forget; do not block server startup
 runDockerDebugSample();
+runDockerDebugSamplePy();
