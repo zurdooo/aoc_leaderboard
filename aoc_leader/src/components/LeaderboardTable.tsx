@@ -1,5 +1,5 @@
 import type { LeaderboardEntry } from "../api/leaderboard";
-import "./Leaderboard.css";
+import "./styles/Leaderboard.css";
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];

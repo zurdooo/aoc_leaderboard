@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import "./Leaderboard.css";
+import "./styles/Leaderboard.css";
 
 export interface LeaderboardFilterFormState {
   year: string;

@@ -39,9 +39,7 @@ function App() {
             username={username} 
             onLogout={logout}
           />
-          <div className="main-content" style={{ paddingTop: '80px' }}>
-            <h1>AOC Leaderboard</h1>
-            <p>Welcome, {username}!</p>
+          <div className="main-content" style={{ paddingTop: '10px' }}>
             <Leaderboard onSubmitClick={() => setIsSubmitOpen(true)} />
           </div>
         </>
