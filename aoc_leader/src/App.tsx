@@ -37,13 +37,12 @@ function App() {
         <>
           <Header 
             username={username} 
-            onLogout={logout} 
-            onSubmitClick={() => setIsSubmitOpen(true)}
+            onLogout={logout}
           />
           <div className="main-content" style={{ paddingTop: '80px' }}>
             <h1>AOC Leaderboard</h1>
             <p>Welcome, {username}!</p>
-            <Leaderboard />
+            <Leaderboard onSubmitClick={() => setIsSubmitOpen(true)} />
           </div>
         </>
       )}
@@ -56,7 +55,10 @@ function App() {
       )}
 
       {isSubmitOpen && (
-        <FileSubmission onClose={() => setIsSubmitOpen(false)} />
+        <FileSubmission
+          onClose={() => setIsSubmitOpen(false)}
+          username={username}
+        />
       )}
     </>
   );

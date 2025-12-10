@@ -38,11 +38,11 @@
 
 .btn.primary {
   border-color: #6c5ce7;
-  background: linear-gradient(135deg, #6c5ce7, #a363d9);
+  background:  #000000;
 }
 
 .btn.primary:hover {
-  background: linear-gradient(135deg, #7f6ff2, #b377eb);
+  background:  #b377eb;
 }
 
 .btn.secondary {

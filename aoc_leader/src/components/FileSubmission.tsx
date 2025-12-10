@@ -4,11 +4,12 @@ import { submitSolution } from "../api/submissions";
 
 interface FileSubmissionProps {
   onClose: () => void;
+  username: string;
 }
 
 type SubmissionStatus = "idle" | "submitting" | "success" | "error";
 
-export default function FileSubmission({ onClose }: FileSubmissionProps) {
+export default function FileSubmission({ onClose, username }: FileSubmissionProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [inputFile, setInputFile] = useState<File | null>(null);
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -82,6 +83,7 @@ export default function FileSubmission({ onClose }: FileSubmissionProps) {
         part1,
         part2,
         inputFile,
+        username,
       });
 
       if (result.success) {

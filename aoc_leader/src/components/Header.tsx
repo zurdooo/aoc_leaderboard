@@ -3,10 +3,9 @@ import './Header.css';
 interface HeaderProps {
   username: string;
   onLogout: () => void;
-  onSubmitClick: () => void;
 }
 
-export default function Header({ username, onLogout, onSubmitClick }: HeaderProps) {
+export default function Header({ username, onLogout }: HeaderProps) {
   return (
     <header className="header">
       <div className="header-left">
@@ -14,9 +13,6 @@ export default function Header({ username, onLogout, onSubmitClick }: HeaderProp
       </div>
       <div className="header-right">
         <span className="header-username">{username}</span>
-        <button className="header-btn submit-btn" onClick={onSubmitClick}>
-        Submit
-        </button>
         <button className="header-btn logout-btn" onClick={onLogout}>
           Logout
         </button>

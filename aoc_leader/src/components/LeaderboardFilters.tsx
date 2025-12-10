@@ -20,6 +20,8 @@ const numberInputProps = {
   max: 2100,
 };
 
+// TODO: Instead of matching name exactly, allow partial matches
+
 export default function LeaderboardFilters({
   filters,
   onChange,

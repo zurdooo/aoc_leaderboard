@@ -7,6 +7,8 @@ export interface SubmissionData {
   part1: boolean;
   part2: boolean;
   inputFile: File;
+  username?: string;
+  userId?: string;
 }
 
 export interface SubmissionResponse {
@@ -31,6 +33,17 @@ export async function submitSolution(
 
   formData.append("input", data.inputFile);
 
+  const trimmedUsername = data.username?.trim();
+  const normalizedUserId = (data.userId ?? buildUserId(trimmedUsername)).trim();
+
+  if (trimmedUsername) {
+    formData.append("username", trimmedUsername);
+  }
+
+  if (normalizedUserId) {
+    formData.append("userId", normalizedUserId);
+  }
+
   const response = await fetch(`${API_BASE}/api/submit`, {
     method: "POST",
     credentials: "include",
@@ -51,4 +64,14 @@ export async function submitSolution(
       error: result.error || "Submission failed",
     };
   }
+}
+
+function buildUserId(username?: string): string {
+  if (!username) return "";
+  const slug = username
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return slug ? `user-${slug}` : "";
 }

@@ -1,21 +1,19 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+/*
+
+TESTING LINES OF RELVANT CODE
+*/
+
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    std::cout << "Hello, World!" << std::endl;
 
-    long long n;
-    if (!(cin >> n)) {
-        cerr << "no input" << '\n';
-        return 1;
-    }
+    int a = 5;
+    int b = 10;
+    std::cout << "Sum: " << (a + b) << std::endl;
 
-    long long sum = 0;
-    for (long long i = 0; i < n; ++i) {
-        sum += i;
-    }
 
-    cout << "sum(" << n << ")=" << sum << '\n';
+    // * Test complete */
     return 0;
 }

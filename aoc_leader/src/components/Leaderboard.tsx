@@ -22,7 +22,11 @@ const toQueryFilters = (
   username: form.username.trim() || undefined,
 });
 
-export default function Leaderboard() {
+interface LeaderboardProps {
+  onSubmitClick: () => void;
+}
+
+export default function Leaderboard({ onSubmitClick }: LeaderboardProps) {
   const [form, setForm] = useState<LeaderboardFilterFormState>(DEFAULT_FORM);
 
   const filters = useMemo(() => toQueryFilters(form), [form]);
@@ -33,6 +37,9 @@ export default function Leaderboard() {
       <div className="leaderboard-panel leaderboard-card">
         <div className="leaderboard-panel-header">
           <h2>Global Leaderboard</h2>
+          <button className="btn primary submit-btn" onClick={onSubmitClick}>
+            Submit Solution
+          </button>
         </div>
         <LeaderboardFilters
           filters={form}

@@ -13,6 +13,16 @@ const formatDuration = (ms: number) => {
   return `${(ms / 1000).toFixed(2)} s`;
 };
 
+const formatMemory = (kb: number) => {
+  if (!Number.isFinite(kb) || kb < 0) return "-";
+  if (kb >= 1024) {
+    const mb = kb / 1024;
+    if (mb >= 10) return `${mb.toFixed(1)} MB`;
+    return `${mb.toFixed(2)} MB`;
+  }
+  return `${kb} KB`;
+};
+
 const formatDate = (value: string) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -87,7 +97,6 @@ export default function LeaderboardTable({
                 <td>
                   <div className="user-cell">
                     <span className="username">{entry.username}</span>
-                    <span className="user-id">{entry.userId}</span>
                   </div>
                 </td>
                 <td>
@@ -106,7 +115,7 @@ export default function LeaderboardTable({
                   </span>
                 </td>
                 <td>{formatDuration(entry.executionTimeMs)}</td>
-                <td>{entry.memoryUsageKb ? `${entry.memoryUsageKb} kb` : "-"}</td>
+                <td>{formatMemory(entry.memoryUsageKb)}</td>
                 <td>{entry.linesOfRelevantCode || "-"}</td>
                 <td>{formatDate(entry.submittedAt)}</td>
               </tr>

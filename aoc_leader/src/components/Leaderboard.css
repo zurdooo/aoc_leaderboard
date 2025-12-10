@@ -16,12 +16,23 @@
 .leaderboard-panel-header {
   padding: 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .leaderboard-panel-header h2 {
   margin: 0;
   font-size: 1.5rem;
   color: #f5f5f5;
+}
+
+.leaderboard-panel-header .submit-btn {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  padding: 0.45rem 1.1rem;
 }
 
 .leaderboard-panel {
@@ -173,11 +184,6 @@
 
 .username {
   font-weight: 600;
-}
-
-.user-id {
-  font-size: 0.75rem;
-  color: #8f8f8f;
 }
 
 .meta-cell {

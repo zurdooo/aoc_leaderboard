@@ -19,14 +19,14 @@ const LANGUAGE_CONFIG: Record<
 > = {
   python: {
     image: "python:3.11-slim",
-    cmd: (filename) => ["sh", "-c", `python ${filename} < /tmp/input.txt`],
+    cmd: (filename) => ["sh", "-c", "python " + filename + " < /tmp/input.txt"],
   },
   c: {
     image: "gcc:latest",
     cmd: (filename) => [
       "sh",
       "-c",
-      `gcc -o /tmp/solution ${filename} && /tmp/solution < /tmp/input.txt`,
+      "gcc -O0 -g -o /tmp/solution " + filename + " && /tmp/solution < /tmp/input.txt",
     ],
   },
   cpp: {
@@ -34,21 +34,24 @@ const LANGUAGE_CONFIG: Record<
     cmd: (filename) => [
       "sh",
       "-c",
-      `g++ -std=c++23 -O2 -pipe -static -s -o /tmp/solution ${filename} && /tmp/solution < /tmp/input.txt`,
+      "g++ -std=c++23 -O0 -g -o /tmp/solution " + filename + " && /tmp/solution < /tmp/input.txt",
     ],
   },
 };
 
-// Timeout for container execution (30 seconds)
-const EXECUTION_TIMEOUT_MS = 30000;
-// Memory limit for container (256MB)
-const MEMORY_LIMIT = 256 * 1024 * 1024;
+// Timeout for container execution (120 seconds) — increased to avoid hitting short compile/link times
+const EXECUTION_TIMEOUT_MS = 120000;
+// Memory limit for container (512MB)
+const MEMORY_LIMIT = 512 * 1024 * 1024;
 
 interface ExecutionResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+  // executionTimeMs represents the time from container start -> container exit
   executionTimeMs: number;
+  // setupTimeMs represents the time spent preparing the container (image pull, create, copying files)
+  setupTimeMs?: number;
   memoryUsageKb: number;
 }
 
@@ -84,11 +87,13 @@ async function executeInContainer(
 
   const filename = `/tmp/solution.${language === "python" ? "py" : language}`;
 
+  // Measure setup time (image pull, create, file copy)
+  const setupStart = Date.now();
   // Ensure image is available
   try {
     await docker.getImage(config.image).inspect();
   } catch {
-    console.log(`Pulling image ${config.image}...`);
+    console.log("Pulling image " + config.image + "...");
     await new Promise<void>((resolve, reject) => {
       docker.pull(config.image, (err: Error | null, stream: Readable) => {
         if (err) return reject(err);
@@ -107,7 +112,7 @@ async function executeInContainer(
     WorkingDir: "/tmp",
     HostConfig: {
       Memory: MEMORY_LIMIT,
-      MemorySwap: MEMORY_LIMIT, // Disable swap
+      MemorySwap: -1, // Allow swap (use host swap) to reduce OOM kills
       NetworkMode: "none", // No network access for security
       AutoRemove: false, // We'll remove manually after getting stats
       PidsLimit: 100, // Limit processes
@@ -121,13 +126,15 @@ async function executeInContainer(
   });
 
   try {
-    // Copy solution code to container using a minimal tar archive (Docker putArchive expects tar)
-    const tarStream = createTarStream(filename.replace("/tmp/", ""), code);
-    await container.putArchive(tarStream, { path: "/tmp" });
+  // Copy solution code to container using a minimal tar archive (Docker putArchive expects tar)
+  const tarStream = createTarStream(filename.replace("/tmp/", ""), code);
+  await container.putArchive(tarStream, { path: "/tmp" });
 
-    // Copy input file to container
-    const inputTar = createTarStream("input.txt", inputBuffer);
-    await container.putArchive(inputTar, { path: "/tmp" });
+  // Copy input file to container
+  const inputTar = createTarStream("input.txt", inputBuffer);
+  await container.putArchive(inputTar, { path: "/tmp" });
+
+  const setupEnd = Date.now();
 
     // Attach to container streams (stdout/stderr only)
     const attachOptions = {
@@ -138,11 +145,9 @@ async function executeInContainer(
 
     const stream = await container.attach(attachOptions);
 
-    // Start timing
-    const startTime = Date.now();
-
-    // Start container
-    await container.start();
+  // Start container (we measure runtime from here to when the container exits)
+  await container.start();
+  const runStart = Date.now();
 
     // Collect output with demuxing (Docker multiplexes stdout/stderr)
     const stdoutChunks: Buffer[] = [];
@@ -177,26 +182,33 @@ async function executeInContainer(
       });
     });
 
-    // Wait for container to finish
-    const waitResult = await container.wait();
-    const endTime = Date.now();
+  // Wait for container to finish
+  const waitResult = await container.wait();
+  const endTime = Date.now();
 
-    // Get container stats for memory usage
-    let memoryUsageKb = 0;
+    // Inspect container to detect OOM kills or other termination reasons
     try {
-      const stats = await container.stats({ stream: false });
-      if (stats.memory_stats?.max_usage) {
-        memoryUsageKb = Math.round(stats.memory_stats.max_usage / 1024);
+      const info = await container.inspect();
+      if (info?.State) {
+        if (info.State.OOMKilled) {
+          console.warn("Container OOMKilled=true — process was killed by the OOM killer");
+        }
+        if (info.State.ExitCode && info.State.ExitCode !== waitResult.StatusCode) {
+          console.warn("Container exit code (inspect) differs:", info.State.ExitCode, "wait status:", waitResult.StatusCode);
+        }
       }
-    } catch {
-      // Stats may not be available if container exited too quickly
+    } catch (err) {
+      // ignore inspect errors
     }
+
+    const memoryUsageKb = await readPeakMemoryUsage(container);
 
     return {
       stdout: Buffer.concat(stdoutChunks).toString("utf-8"),
       stderr: Buffer.concat(stderrChunks).toString("utf-8"),
       exitCode: waitResult.StatusCode,
-      executionTimeMs: endTime - startTime,
+      executionTimeMs: endTime - runStart,
+      setupTimeMs: setupEnd - setupStart,
       memoryUsageKb,
     };
   } finally {
@@ -217,15 +229,11 @@ async function executeInContainer(
 function createTarStream(filename: string, content: Buffer): Readable {
   // Simple tar format implementation
   const header = Buffer.alloc(512);
-
   // File name (100 bytes)
   header.write(filename, 0, 100, "utf-8");
 
   // File mode (8 bytes) - 0644
   header.write("0000644\0", 100, 8, "utf-8");
-
-  // UID (8 bytes)
-  header.write("0000000\0", 108, 8, "utf-8");
 
   // GID (8 bytes)
   header.write("0000000\0", 116, 8, "utf-8");
@@ -327,6 +335,109 @@ function countLinesOfCode(code: Buffer, language: string): number {
 /**
  * Runs the submission code inside a Docker container, captures stats and creates a LeaderboardEntry
  */
+
+async function readPeakMemoryUsage(container: Docker.Container): Promise<number> {
+  const cgroupFiles = [
+    "/sys/fs/cgroup/memory.peak",
+    "/sys/fs/cgroup/memory.max_usage_in_bytes",
+    "/sys/fs/cgroup/memory.current",
+    "/sys/fs/cgroup/memory/memory.peak",
+    "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
+    "/sys/fs/cgroup/memory/memory.usage_in_bytes",
+  ];
+
+  for (const file of cgroupFiles) {
+    const bytes = await readNumberFromCgroup(container, file);
+    if (bytes > 0) {
+      return Math.max(1, Math.round(bytes / 1024));
+    }
+  }
+
+  const statBytes = await readFromMemoryStat(container);
+  if (statBytes > 0) {
+    return Math.max(1, Math.round(statBytes / 1024));
+  }
+
+  return 0;
+}
+
+async function readNumberFromCgroup(
+  container: Docker.Container,
+  path: string
+): Promise<number> {
+  const content = await readFileFromContainer(container, path);
+  if (!content) return 0;
+  const value = parseInt(content, 10);
+  return Number.isFinite(value) ? value : 0;
+}
+
+async function readFromMemoryStat(container: Docker.Container): Promise<number> {
+  const content = await readFileFromContainer(
+    container,
+    "/sys/fs/cgroup/memory.stat"
+  );
+  if (!content) return 0;
+  let max = 0;
+  for (const line of content.split(/\r?\n/)) {
+    const [key, raw] = line.trim().split(/\s+/);
+    if (!raw) continue;
+    if (key === "peak" || key === "rss" || key === "anon" || key === "max") {
+      const value = parseInt(raw, 10);
+      if (Number.isFinite(value) && value > max) {
+        max = value;
+      }
+    }
+    if (key === "hierarchical_memory_limit") {
+      continue;
+    }
+    if (key.startsWith("total_")) {
+      const value = parseInt(raw, 10);
+      if (Number.isFinite(value) && value > max) {
+        max = value;
+      }
+    }
+  }
+  return max;
+}
+
+async function readFileFromContainer(
+  container: Docker.Container,
+  path: string
+): Promise<string | null> {
+  try {
+    const execInstance = await container.exec({
+      Cmd: ["cat", path],
+      AttachStdout: true,
+      AttachStderr: true,
+    });
+
+    return await new Promise<string | null>((resolve) => {
+      execInstance.start({ hijack: true, stdin: false }, (err?: Error, stream?: NodeJS.ReadableStream) => {
+        if (err || !stream) {
+          resolve(null);
+          return;
+        }
+
+        let output = "";
+        const stdoutStream = new PassThrough();
+        const stderrStream = new PassThrough();
+
+        stdoutStream.on("data", (chunk: Buffer) => {
+          output += chunk.toString("utf-8");
+        });
+
+        docker.modem.demuxStream(stream, stdoutStream, stderrStream);
+
+        stream.on("end", () => {
+          resolve(output.trim());
+        });
+        stream.on("error", () => resolve(null));
+      });
+    });
+  } catch {
+    return null;
+  }
+}
 async function runSubmission(
   solutionBuffer: Buffer,
   entry: LeaderboardEntry,
@@ -346,6 +457,7 @@ async function runSubmission(
     console.log("Execution result:", {
       exitCode: result.exitCode,
       executionTimeMs: result.executionTimeMs,
+      setupTimeMs: result.setupTimeMs,
       memoryUsageKb: result.memoryUsageKb,
       stdoutLength: result.stdout.length,
       stderrLength: result.stderr.length,
